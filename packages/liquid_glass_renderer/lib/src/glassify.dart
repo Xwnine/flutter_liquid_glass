@@ -392,8 +392,9 @@ class _GlassifyShaderLayer extends OffsetLayer {
   }
 
   void _setupShaderUniforms() {
-    final scaleX = transformedSize.width / layerSize.width;
-    final scaleY = transformedSize.height / layerSize.height;
+    // Guard against division by zero when layerSize is empty
+    final scaleX = layerSize.width > 0 ? transformedSize.width / layerSize.width : 1.0;
+    final scaleY = layerSize.height > 0 ? transformedSize.height / layerSize.height : 1.0;
 
     shader
       ..setImageSampler(1, childImage!)

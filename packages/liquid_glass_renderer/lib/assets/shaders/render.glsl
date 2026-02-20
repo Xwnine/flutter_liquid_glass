@@ -12,10 +12,12 @@ mat2 rotate2d(float angle) {
 
 // Compute Y coordinate reversing it for OpenGL backend
 float computeY(float coordY, vec2 size) {
+    // Guard against division by zero when size.y is 0
+    float safeY = max(size.y, 1.0);
     #ifdef IMPELLER_TARGET_OPENGLES
-        return 1.0 - (coordY / size.y);
+        return 1.0 - (coordY / safeY);
     #else
-        return coordY / size.y;
+        return coordY / safeY;
     #endif
 }
 
@@ -148,10 +150,11 @@ float calculateDispersiveIndex(float baseIndex, float chromaticAberration, float
 vec4 calculateRefraction(vec2 screenUV, vec3 normal, float height, float thickness, float refractiveIndex, float chromaticAberration, vec2 uSize, sampler2D backgroundTexture, float blurRadius, out vec2 refractionDisplacement) {
     float baseHeight = thickness * 8.0;
     vec3 incident = vec3(0.0, 0.0, -1.0);
-    
+
     // Cache reciprocals to avoid repeated division
-    float invRefractiveIndex = 1.0 / refractiveIndex;
-    vec2 invUSize = 1.0 / uSize;
+    // Guard against division by zero
+    float invRefractiveIndex = 1.0 / max(refractiveIndex, 0.001);
+    vec2 invUSize = 1.0 / max(uSize, vec2(1.0));
     
     // Pre-compute base refraction vector once
     vec3 baseRefract = refract(incident, normal, invRefractiveIndex);

@@ -39,13 +39,17 @@ void main() {
     // So we need to scale by devicePixelRatio to work in physical pixel space
     vec2 fragCoord = FlutterFragCoord().xy;
     
-    vec2 screenUV = vec2(fragCoord.x / uSize.x, fragCoord.y / uSize.y);        
-        
+    // Guard against division by zero
+    vec2 safeSize = max(uSize, vec2(1.0));
+    vec2 safeGeometrySize = max(uGeometrySize, vec2(1.0));
+
+    vec2 screenUV = vec2(fragCoord.x / safeSize.x, fragCoord.y / safeSize.y);
+
     #ifdef IMPELLER_TARGET_OPENGLES
         screenUV.y = 1.0 - screenUV.y;
     #endif
 
-    vec2 geometryUV = (fragCoord - uGeometryOffset) / uGeometrySize;
+    vec2 geometryUV = (fragCoord - uGeometryOffset) / safeGeometrySize;
     #ifdef IMPELLER_TARGET_OPENGLES
         geometryUV.y = 1.0 - geometryUV.y;
     #endif
@@ -65,7 +69,7 @@ void main() {
     float maxDisplacement = uThickness * 10.0;
     vec2 displacement = decodeDisplacement(geometryData, maxDisplacement);
     
-    vec2 invUSize = 1.0 / uSize;
+    vec2 invUSize = 1.0 / safeSize;
     
     vec4 refractColor;
     if (uChromaticAberration < 0.01) {
@@ -101,7 +105,9 @@ void main() {
     float edgeFactor = 1.0 - smoothstep(0.0, edgeThreshold, normalizedHeight);
     
     if (edgeFactor > 0.01) {
-        vec2 normalXY = normalize(displacement);
+        // Guard against normalize of zero vector
+        float dispLen = length(displacement);
+        vec2 normalXY = dispLen > 0.0 ? displacement / dispLen : vec2(0.0, 1.0);
         
         float mainLight = max(0.0, dot(normalXY, uLightDirection));
         float oppositeLight = max(0.0, dot(normalXY, -uLightDirection));

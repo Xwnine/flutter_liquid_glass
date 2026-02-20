@@ -42,13 +42,16 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     vec2 fragCoord = FlutterFragCoord().xy;
-     
+
+    // Guard against division by zero
+    vec2 safeSize = max(uSize, vec2(1.0));
+
     // We invert screenUV Y on OpenGL to sample the textures correctly
     // fragCoord stays the same so shape positions are correct.
     #ifdef IMPELLER_TARGET_OPENGLES
-        vec2 screenUV = vec2(fragCoord.x / uSize.x, 1.0 - (fragCoord.y / uSize.y));
+        vec2 screenUV = vec2(fragCoord.x / safeSize.x, 1.0 - (fragCoord.y / safeSize.y));
     #else
-        vec2 screenUV = vec2(fragCoord.x / uSize.x, fragCoord.y / uSize.y);
+        vec2 screenUV = vec2(fragCoord.x / safeSize.x, fragCoord.y / safeSize.y);
     #endif
     
     // Generate shape and calculate normal using shader-specific method

@@ -24,11 +24,14 @@ layout(location = 0) out vec4 fragColor;
 
 void main() {
     vec2 fragCoord = FlutterFragCoord().xy;
-    
+
+    // Guard against division by zero
+    vec2 safeSize = max(uSize, vec2(1.0));
+
     #ifdef IMPELLER_TARGET_OPENGLES
-        vec2 screenUV = vec2(fragCoord.x / uSize.x, 1.0 - (fragCoord.y / uSize.y));
+        vec2 screenUV = vec2(fragCoord.x / safeSize.x, 1.0 - (fragCoord.y / safeSize.y));
     #else
-        vec2 screenUV = vec2(fragCoord.x / uSize.x, fragCoord.y / uSize.y);
+        vec2 screenUV = vec2(fragCoord.x / safeSize.x, fragCoord.y / safeSize.y);
     #endif
     
     float sd = sceneSDF(fragCoord, int(uNumShapes), uShapeData, uBlend);
@@ -41,11 +44,15 @@ void main() {
     
     float dx = dFdx(sd);
     float dy = dFdy(sd);
-    
-    float n_cos = max(uThickness + sd, 0.0) / uThickness;
+
+    // Guard against division by zero when thickness is 0
+    float n_cos = uThickness > 0.0 ? max(uThickness + sd, 0.0) / uThickness : 1.0;
     float n_sin = sqrt(max(0.0, 1.0 - n_cos * n_cos));
-    
-    vec3 normal = normalize(vec3(dx * n_cos, dy * n_cos, n_sin));
+
+    // Guard against normalize of zero vector
+    vec3 rawNormal = vec3(dx * n_cos, dy * n_cos, n_sin);
+    float normalLen = length(rawNormal);
+    vec3 normal = normalLen > 0.0 ? rawNormal / normalLen : vec3(0.0, 0.0, 1.0);
     
     if (sd >= 0.0 || uThickness <= 0.0) {
         fragColor = vec4(0.0);
@@ -58,8 +65,9 @@ void main() {
     
     float baseHeight = uThickness * 8.0;
     vec3 incident = vec3(0.0, 0.0, -1.0);
-    
-    float invRefractiveIndex = 1.0 / uRefractiveIndex;
+
+    // Guard against division by zero
+    float invRefractiveIndex = 1.0 / max(uRefractiveIndex, 0.001);
     vec3 baseRefract = refract(incident, normal, invRefractiveIndex);
     float baseRefractLength = (height + baseHeight) / max(0.001, abs(baseRefract.z));
     vec2 displacement = baseRefract.xy * baseRefractLength;

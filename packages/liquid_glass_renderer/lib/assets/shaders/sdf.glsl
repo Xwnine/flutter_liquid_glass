@@ -107,10 +107,14 @@ float sceneSDF(vec2 p, int numShapes, float shapeData[MAX_SHAPES * 6], float ble
 vec3 getNormal(float sd, float thickness) {
     float dx = dFdx(sd);
     float dy = dFdy(sd);
-    
+
     // The cosine and sine between normal and the xy plane
-    float n_cos = max(thickness + sd, 0.0) / thickness;
+    // Guard against division by zero when thickness is 0
+    float n_cos = thickness > 0.0 ? max(thickness + sd, 0.0) / thickness : 1.0;
     float n_sin = sqrt(max(0.0, 1.0 - n_cos * n_cos));
-    
-    return normalize(vec3(dx * n_cos, dy * n_cos, n_sin));
+
+    // Guard against normalize of zero vector
+    vec3 normal = vec3(dx * n_cos, dy * n_cos, n_sin);
+    float len = length(normal);
+    return len > 0.0 ? normal / len : vec3(0.0, 0.0, 1.0);
 }

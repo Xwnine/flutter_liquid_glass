@@ -166,9 +166,13 @@ vec3 getNormal(vec2 p, float thickness) {
 void main() {
     vec2 fragCoord = FlutterFragCoord().xy;
 
+    // Guard against division by zero
+    vec2 safeSize = max(uSize, vec2(1.0));
+    vec2 safeForegroundSize = max(uForegroundSize, vec2(1.0));
+
     // Compute screen UV
     float screenY = computeY(fragCoord.y, uSize);
-    vec2 screenUV = vec2(fragCoord.x / uSize.x, screenY);
+    vec2 screenUV = vec2(fragCoord.x / safeSize.x, screenY);
 
     // Convert screen coordinates to layer-local coordinates
     // First subtract the layer's position to get coordinates relative to the layer
@@ -177,7 +181,7 @@ void main() {
     // Then apply inverse transform to account for scaling (e.g. from FittedBox)
     vec4 transformedCoord = uTransform * vec4(layerLocalCoord, 0.0, 1.0);
     float layerY = computeY(transformedCoord.y, uForegroundSize);
-    vec2 layerUV = vec2(transformedCoord.x / uForegroundSize.x, layerY);
+    vec2 layerUV = vec2(transformedCoord.x / safeForegroundSize.x, layerY);
 
     // If we are sampling outside of the foreground matte we should just treat the
     // pixel as skipped
