@@ -206,7 +206,9 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
         !anyShapeChangedInLayer &&
         geometry != null) {
       logger.finer('$hashCode Skipping geometry rebuild.');
-      renderLink?.markRebuilt(this);
+      // NOTE: Don't call markRebuilt() here - we're skipping the rebuild,
+      // so the parent doesn't need to rebuild its combined geometry image.
+      // This prevents unnecessary texture rebuilds during scrolling.
 
       // Only render once we are done building
       geometry = geometry!.render();
